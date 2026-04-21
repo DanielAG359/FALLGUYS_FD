@@ -1,7 +1,7 @@
 using Unity.Netcode;
 using UnityEngine;
 
-public class Ex1NetworkUI : MonoBehaviour {
+public class NetworkUI : MonoBehaviour {
     void OnGUI() {
         if (!NetworkManager.Singleton) return;
         if (!NetworkManager.Singleton.IsClient && !NetworkManager.Singleton.IsServer) {
