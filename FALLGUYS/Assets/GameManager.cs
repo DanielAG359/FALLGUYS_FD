@@ -71,6 +71,14 @@ public class GameManager : NetworkBehaviour
         ulong clientId = rpcParams.Receive.SenderClientId;
 
         readyPlayers[clientId] = ready;
+
+    }
+
+    public bool IsPlayerReady(ulong clientId)
+    {
+        if (readyPlayers.ContainsKey(clientId)) return readyPlayers[clientId];
+
+        return false;
     }
 
     public bool AreAllPlayersReady()
