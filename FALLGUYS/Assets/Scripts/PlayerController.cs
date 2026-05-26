@@ -29,6 +29,8 @@ public class PlayerController : NetworkBehaviour
     [SerializeField] private GameObject playerCamera;
     private Camera cam;
 
+    private float defaultMaxSpeed;
+
     // INPUT server
     private Vector3 serverInput;
     private bool serverJump;
@@ -61,6 +63,7 @@ public class PlayerController : NetworkBehaviour
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
+        defaultMaxSpeed = maxSpeed;
     }
 
     public override void OnNetworkSpawn()
@@ -301,5 +304,22 @@ public class PlayerController : NetworkBehaviour
         finished = true;
 
         GameManager.Instance.PlayerFinished(this);
+    }
+
+    public void SetSpeedBoost(float newSpeed, float duration)
+    {
+        if (!IsServer) return;
+
+        StartCoroutine(SpeedBoostCoroutine(newSpeed, duration));
+    }
+    private System.Collections.IEnumerator SpeedBoostCoroutine(float boostedSpeed,float duration)
+    {
+        maxSpeed = boostedSpeed;
+
+        yield return new WaitForSeconds(duration);
+
+        maxSpeed = defaultMaxSpeed;
+
+        Debug.Log("Speed boost ended");
     }
 }

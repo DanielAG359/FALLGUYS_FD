@@ -73,10 +73,6 @@ public class GameManager : NetworkBehaviour
 
         readyPlayers[clientId] = ready;
 
-        Debug.Log(
-            "Player " + clientId +
-            " ready = " + ready
-        );
     }
 
     public bool IsPlayerReady(ulong clientId)
