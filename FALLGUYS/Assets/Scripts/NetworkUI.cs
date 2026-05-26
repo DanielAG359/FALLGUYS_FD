@@ -5,6 +5,7 @@ using UnityEngine;
 public class NetworkUI : MonoBehaviour
 {
     private string ip = "127.0.0.1";
+    private bool localReady = false;
 
     void OnGUI()
     {
@@ -31,6 +32,7 @@ public class NetworkUI : MonoBehaviour
                 NetworkManager.Singleton.StartHost();
             }
 
+
             if (GUI.Button(new Rect(120, 50, 100, 30), "Client"))
             {
                 var transport =
@@ -50,14 +52,58 @@ public class NetworkUI : MonoBehaviour
                 NetworkManager.Singleton.ConnectedClientsList.Count
             );
 
-            if (NetworkManager.Singleton.IsServer)
+            // SI PARTIDA NO EMPEZO
+            if (!GameManager.Instance.GameStarted.Value)
             {
-                if (GUI.Button(
-                    new Rect(10, 40, 120, 30),
-                    "Begin Match"))
+                // BOTON READY
+                if (!localReady)
                 {
-                    GameManager.Instance.TryStartGame();
+                    if (GUI.Button(new Rect(10, 40, 100, 30), "READY: NO"))
+                    {
+                        localReady = true;
+
+                        GameManager.Instance.SetReadyRpc(true);
+                    }
                 }
+                else
+                {
+                    GUI.Label(
+                        new Rect(10, 40, 100, 30),
+                        "READY: OK"
+                    );
+                }
+
+                // SOLO HOST VE BEGIN
+                if (NetworkManager.Singleton.IsServer)
+                {
+                    bool allReady = GameManager.Instance.AreAllPlayersReady();
+
+                    GUI.enabled = allReady;
+
+                    if (GUI.Button(
+                        new Rect(120, 40, 140, 30),
+                        "BEGIN MATCH"))
+                    {
+                        GameManager.Instance.TryStartGame();
+                    }
+
+                    GUI.enabled = true;
+
+                    if (!allReady)
+                    {
+                        GUI.Label(
+                            new Rect(120, 75, 200, 20),
+                            "Waiting players..."
+                        );
+                    }
+                }
+            }
+            else
+            {
+                GUI.Label(
+                    new Rect(10, 40, 200, 20),
+                    "MATCH RUNNING"
+                );
             }
         }
     }

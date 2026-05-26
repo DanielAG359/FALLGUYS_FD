@@ -6,13 +6,13 @@ public class FallPlat : NetworkBehaviour
 {
     public float fallDelay = 1f;
 
-    private Rigidbody rb;
+    //private Rigidbody rb;
 
     private bool activated = false;
 
     private void Awake()
     {
-        rb = GetComponent<Rigidbody>();
+        //rb = GetComponent<Rigidbody>();
     }
 
     private void OnCollisionEnter(Collision collision)
@@ -23,6 +23,7 @@ public class FallPlat : NetworkBehaviour
 
         if (collision.gameObject.CompareTag("Player"))
         {
+            Debug.Log("COLISION PLAYER");
             activated = true;
 
             StartCoroutine(Fall());
@@ -33,6 +34,6 @@ public class FallPlat : NetworkBehaviour
     {
         yield return new WaitForSeconds(fallDelay);
 
-        rb.isKinematic = false;
+        //rb.isKinematic = false;
     }
 }

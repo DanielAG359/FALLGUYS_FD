@@ -15,6 +15,10 @@ public class GameManager : NetworkBehaviour
     private List<PlayerController> finishedPlayers =
         new List<PlayerController>();
 
+    // READY STATES
+    private Dictionary<ulong, bool> readyPlayers =
+        new Dictionary<ulong, bool>();
+
     private void Awake()
     {
         Instance = this;
@@ -26,12 +30,25 @@ public class GameManager : NetworkBehaviour
         {
             NetworkManager.Singleton.OnClientConnectedCallback +=
                 OnClientConnected;
+
+            NetworkManager.Singleton.OnClientDisconnectCallback +=
+                OnClientDisconnected;
         }
     }
 
     private void OnClientConnected(ulong clientId)
     {
+        readyPlayers[clientId] = false;
+
         AssignSpawn(clientId);
+    }
+
+    private void OnClientDisconnected(ulong clientId)
+    {
+        if (readyPlayers.ContainsKey(clientId))
+        {
+            readyPlayers.Remove(clientId);
+        }
     }
 
     private void AssignSpawn(ulong clientId)
@@ -48,27 +65,61 @@ public class GameManager : NetworkBehaviour
             spawnPoints[randomSpawn].position;
     }
 
+
+    [Rpc(SendTo.Server)]
+    public void SetReadyRpc(bool ready, RpcParams rpcParams = default)
+    {
+        ulong clientId = rpcParams.Receive.SenderClientId;
+
+        readyPlayers[clientId] = ready;
+
+        Debug.Log(
+            "Player " + clientId +
+            " ready = " + ready
+        );
+    }
+
+    public bool IsPlayerReady(ulong clientId)
+    {
+        if (readyPlayers.ContainsKey(clientId)) return readyPlayers[clientId];
+
+        return false;
+    }
+
+    public bool AreAllPlayersReady()
+    {
+        if (readyPlayers.Count < 2) return false;
+
+        foreach (var player in readyPlayers)
+        {
+            if (!player.Value) return false;
+        }
+
+        return true;
+    }
+
     public void TryStartGame()
     {
         if (!IsServer) return;
 
-        if (NetworkManager.Singleton.ConnectedClientsList.Count >= 2)
+        if (!AreAllPlayersReady())
         {
-            GameStarted.Value = true;
-
-            Debug.Log("MATCH STARTED");
+            Debug.Log("Not all players ready");
+            return;
         }
+
+        GameStarted.Value = true;
+
+        Debug.Log("MATCH STARTED");
     }
 
     public void PlayerFinished(PlayerController player)
     {
-        if (finishedPlayers.Contains(player))
-            return;
+        if (finishedPlayers.Contains(player)) return;
 
         finishedPlayers.Add(player);
 
-        int total =
-            NetworkManager.Singleton.ConnectedClientsList.Count;
+        int total = NetworkManager.Singleton.ConnectedClientsList.Count;
 
         if (finishedPlayers.Count >= total - 1)
         {

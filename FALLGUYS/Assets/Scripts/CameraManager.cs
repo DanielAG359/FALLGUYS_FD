@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Unity.Netcode;
+using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class CameraManager : MonoBehaviour
@@ -38,18 +39,22 @@ public class CameraManager : MonoBehaviour
         camTrans = cam.transform;
         pivot = camTrans.parent;
 
-        PlayerController[] players =
-            FindObjectsOfType<PlayerController>();
+        if (NetworkManager.Singleton == null)
+            return;
 
-        foreach (PlayerController player in players)
-        {
-            if (player.IsOwner)
-            {
-                target = player.transform;
-                initialized = true;
-                break;
-            }
-        }
+        if (NetworkManager.Singleton.LocalClient == null)
+            return;
+
+        if (NetworkManager.Singleton.LocalClient.PlayerObject == null)
+            return;
+
+        target =
+            NetworkManager.Singleton
+            .LocalClient
+            .PlayerObject
+            .transform;
+
+        initialized = true;
     }
 
     void FixedUpdate()
@@ -57,8 +62,8 @@ public class CameraManager : MonoBehaviour
         if (!initialized || target == null)
             return;
 
-        float h = Mouse.current.delta.ReadValue().x * 0.01f;
-        float v = Mouse.current.delta.ReadValue().y * 0.01f;
+        float h = Mouse.current.delta.ReadValue().x;
+        float v = Mouse.current.delta.ReadValue().y;
 
         FollowTarget(Time.deltaTime);
 
