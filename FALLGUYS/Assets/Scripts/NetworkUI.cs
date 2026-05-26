@@ -46,43 +46,44 @@ public class NetworkUI : MonoBehaviour
         }
         else
         {
-            GUI.Label(
-                new Rect(10, 10, 250, 20),
-                "Players: " +
-                NetworkManager.Singleton.ConnectedClientsList.Count
-            );
+            // Panel principal del juego
+            GUI.Label(new Rect(10, 10, 250, 20), "Players: " + NetworkManager.Singleton.ConnectedClientsList.Count);
 
-            // SI PARTIDA NO EMPEZO
-            if (!GameManager.Instance.GameStarted.Value)
+            // MOSTRAR GANADOR (si la partida terminó)
+            if (GameManager.Instance.GameFinished.Value)
             {
-                // BOTON READY
+                GUI.Label(new Rect(Screen.width / 2 - 100, Screen.height / 2 - 50, 200, 50),
+                        "🏆 JUEGO TERMINADO 🏆",
+                        EstiloTextoGrande());
+                GUI.Label(new Rect(Screen.width / 2 - 100, Screen.height / 2, 200, 30),
+                        $"GANADOR: Player {GameManager.Instance.GetWinnerId()}",
+                        EstiloTextoCentrado());
+            }
+            // SOLO mostrar lobby si la partida NO ha terminado Y NO ha empezado
+            else if (!GameManager.Instance.GameStarted.Value)
+            {
+                // ZONA READY
                 if (!localReady)
                 {
                     if (GUI.Button(new Rect(10, 40, 100, 30), "READY: NO"))
                     {
                         localReady = true;
-
                         GameManager.Instance.SetReadyRpc(true);
                     }
                 }
                 else
                 {
-                    GUI.Label(
-                        new Rect(10, 40, 100, 30),
-                        "READY: OK"
-                    );
+                    GUI.Label(new Rect(10, 40, 100, 30), "READY: OK");
                 }
 
-                // SOLO HOST VE BEGIN
+                // ZONA HOST (BEGIN)
                 if (NetworkManager.Singleton.IsServer)
                 {
                     bool allReady = GameManager.Instance.AreAllPlayersReady();
 
                     GUI.enabled = allReady;
 
-                    if (GUI.Button(
-                        new Rect(120, 40, 140, 30),
-                        "BEGIN MATCH"))
+                    if (GUI.Button(new Rect(120, 40, 140, 30), "BEGIN MATCH"))
                     {
                         GameManager.Instance.TryStartGame();
                     }
@@ -91,20 +92,33 @@ public class NetworkUI : MonoBehaviour
 
                     if (!allReady)
                     {
-                        GUI.Label(
-                            new Rect(120, 75, 200, 20),
-                            "Waiting players..."
-                        );
+                        GUI.Label(new Rect(120, 75, 200, 20), "Waiting players...");
                     }
                 }
             }
             else
             {
-                GUI.Label(
-                    new Rect(10, 40, 200, 20),
-                    "MATCH RUNNING"
-                );
+                GUI.Label(new Rect(10, 40, 200, 20), "MATCH RUNNING");
             }
         }
+    }
+
+    private GUIStyle EstiloTextoCentrado()
+    {
+        GUIStyle style = new GUIStyle();
+        style.alignment = TextAnchor.MiddleCenter;
+        style.fontSize = 20;
+        style.normal.textColor = Color.yellow;
+        return style;
+    }
+
+    private GUIStyle EstiloTextoGrande()
+    {
+        GUIStyle style = new GUIStyle();
+        style.alignment = TextAnchor.MiddleCenter;
+        style.fontSize = 32;
+        style.fontStyle = FontStyle.Bold;
+        style.normal.textColor = Color.red;
+        return style;
     }
 }

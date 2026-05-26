@@ -8,32 +8,31 @@ public class GameManager : NetworkBehaviour
 
     public NetworkVariable<bool> GameStarted =
         new NetworkVariable<bool>(false);
+    public NetworkVariable<bool> GameFinished =
+        new NetworkVariable<bool>(false);
 
     [SerializeField]
     private Transform[] spawnPoints;
 
     private List<PlayerController> finishedPlayers =
         new List<PlayerController>();
-
+        
     // READY STATES
     private Dictionary<ulong, bool> readyPlayers =
         new Dictionary<ulong, bool>();
+    
+    // Ganador
+    private ulong winnerClientId;
+    private string winnerName = "";
 
-    private void Awake()
-    {
-        Instance = this;
-    }
+    private void Awake() => Instance = this;
 
     public override void OnNetworkSpawn()
     {
-        if (IsServer)
-        {
-            NetworkManager.Singleton.OnClientConnectedCallback +=
-                OnClientConnected;
-
-            NetworkManager.Singleton.OnClientDisconnectCallback +=
-                OnClientDisconnected;
-        }
+        if (!IsServer) return;
+        
+        NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
+        NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
     }
 
     private void OnClientConnected(ulong clientId)
@@ -54,14 +53,14 @@ public class GameManager : NetworkBehaviour
     private void AssignSpawn(ulong clientId)
     {
         var player =
-            NetworkManager.Singleton
-            .ConnectedClients[clientId]
-            .PlayerObject;
+        NetworkManager.Singleton
+        .ConnectedClients[clientId]
+        .PlayerObject;
 
-        int randomSpawn =
+        int randomSpawn = 
             Random.Range(0, spawnPoints.Length);
 
-        player.transform.position =
+        player.transform.position = 
             spawnPoints[randomSpawn].position;
     }
 
@@ -72,18 +71,6 @@ public class GameManager : NetworkBehaviour
         ulong clientId = rpcParams.Receive.SenderClientId;
 
         readyPlayers[clientId] = ready;
-
-        Debug.Log(
-            "Player " + clientId +
-            " ready = " + ready
-        );
-    }
-
-    public bool IsPlayerReady(ulong clientId)
-    {
-        if (readyPlayers.ContainsKey(clientId)) return readyPlayers[clientId];
-
-        return false;
     }
 
     public bool AreAllPlayersReady()
@@ -91,9 +78,7 @@ public class GameManager : NetworkBehaviour
         if (readyPlayers.Count < 2) return false;
 
         foreach (var player in readyPlayers)
-        {
             if (!player.Value) return false;
-        }
 
         return true;
     }
@@ -109,21 +94,53 @@ public class GameManager : NetworkBehaviour
         }
 
         GameStarted.Value = true;
-
-        Debug.Log("MATCH STARTED");
+        GameFinished.Value = false;
+        finishedPlayers.Clear();
+        winnerClientId = 0;
+        winnerName = "";
     }
 
     public void PlayerFinished(PlayerController player)
     {
+        if (!IsServer) return;
         if (finishedPlayers.Contains(player)) return;
+        if (GameFinished.Value) return;
 
         finishedPlayers.Add(player);
+        
+        ulong clientId = player.OwnerClientId;
+        string playerName = $"Player {clientId}";
+
+        // PRIMERO EN LLEGAR = GANADOR
+        if (finishedPlayers.Count == 1)
+        {
+            winnerClientId = clientId;
+            winnerName = playerName;
+            
+            // Mostrar ganador a TODOS los jugadores
+            ShowWinnerClientRpc(winnerName);
+        }
 
         int total = NetworkManager.Singleton.ConnectedClientsList.Count;
 
+        // Terminar partida cuando llega el penúltimo
         if (finishedPlayers.Count >= total - 1)
         {
-            Debug.Log("ROUND FINISHED");
+            GameFinished.Value = true;
+            GameStarted.Value = false;
+            Debug.Log($"🏆 PARTIDA TERMINADA - GANADOR: {winnerName} 🏆");
         }
+    }
+
+    public ulong GetWinnerId()
+    {
+        return winnerClientId;
+    }
+
+    [ClientRpc]
+    private void ShowWinnerClientRpc(string winnerName)
+    {
+        // El ganador se guarda para mostrarlo en UI
+        Debug.Log($"🏆 EL GANADOR ES: {winnerName} 🏆");
     }
 }

@@ -174,7 +174,7 @@ public class PlayerController : NetworkBehaviour
     private void CheckGround()
     {
         float radius = 0.35f;     // ajusta al radio del capsule collider
-        float distance = 1.1f;    // ajusta según altura
+        float distance = 1.1f;    // ajusta segï¿½n altura
 
         Vector3 origin = transform.position + Vector3.up * 0.1f;
 
